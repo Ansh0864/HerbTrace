@@ -13,52 +13,30 @@ export default function CustomerPage({ colors = {}, navigateTo, PAGES }) {
   const [imageFile, setImageFile] = useState(null);
   const [qualityScore, setQualityScore] = useState(null);
   
-  const handleTraceSearch = async () => {
-    if (!searchTerm.trim()) {
-      setError("Please enter a Herb ID to trace.");
-      setTraceData(null);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    setTraceData(null);
+  // pages/CustomerPage.jsx - Updated handleTraceSearch
+const handleTraceSearch = async () => {
+  if (!searchTerm.trim()) {
+    setError("Please enter a Herb ID.");
+    return;
+  }
+  setLoading(true);
+  setError(null);
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock successful response for ID "0"
-      if (searchTerm === "0") {
-        setTraceData({
-          origin: {
-            name: "Ashwagandha",
-            latitude: 28.6139,
-            longitude: 77.2090,
-            timestamp: 1672531200
-          },
-          processingHistory: [
-            {
-              action: "Harvested",
-              location: "Delhi, India",
-              timestamp: 1672531800
-            },
-            {
-              action: "Processed",
-              location: "Mumbai, India",
-              timestamp: 1672618200
-            }
-          ]
-        });
-      } else {
-        setError("Herb not found. Try searching for ID: 0");
-      }
-    } catch (err) {
-      setError("Failed to fetch herb data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/trace_herb/${searchTerm}`);
+    const result = await response.json();
 
+    if (result.status === "success") {
+      setTraceData(result.data); // Removes hardcoded Ashwagandha mock data
+    } else {
+      setError(result.message);
+    }
+  } catch (err) {
+    setError("Failed to reach server.");
+  } finally {
+    setLoading(false);
+  }
+};
   const handleQrScan = () => {
     setIsScanning(true);
     setTimeout(() => {

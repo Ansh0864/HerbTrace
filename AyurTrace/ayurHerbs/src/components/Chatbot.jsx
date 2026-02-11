@@ -3,14 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Bot, Send, X, User } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 
-// Role constants from App.jsx
+// Role constants aligned with App.jsx and AuthPage.jsx
 const ROLES = {
   customer: "Customer",
-  herbContributor: "Herb Form",
+  producer: "Producer",
   processor: "Processor",
 };
 
-export default function Chatbot({ page, colors, userRole }) {
+export default function Chatbot({ colors, userRole, currentUser, darkMode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -23,18 +23,22 @@ export default function Chatbot({ page, colors, userRole }) {
   const darkText = colors.darkText || "#111827";
 
   useEffect(() => {
-    // Set initial greeting message when the chatbot opens or user role changes
+    // Dynamic greeting based on the logged-in user's role
     if (isOpen) {
-      const greeting =
-        userRole === ROLES.herbContributor
-          ? "Hello Farmer! How can I assist you with your herbs today? Feel free to ask about cultivation, pests, or harvesting."
-          : "Welcome! How can I help you learn about Ayurvedic herbs today? Ask me about benefits, uses, or anything else you're curious about.";
+      const userName = currentUser?.email ? currentUser.email.split('@')[0] : "there";
+      let greeting = `Welcome ${userName}! How can I help you learn about Ayurvedic herbs today?`;
+
+      if (userRole === ROLES.producer) {
+        greeting = `Hello ${userName}! How can I assist you with your cultivation, soil health, or harvesting today?`;
+      } else if (userRole === ROLES.processor) {
+        greeting = `Hello ${userName}! Do you have questions regarding batch tracking or processing standards?`;
+      }
+      
       setMessages([{ sender: "bot", text: greeting }]);
     }
-  }, [isOpen, userRole]);
+  }, [isOpen, userRole, currentUser]);
 
   useEffect(() => {
-    // Auto-scroll to the latest message
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -49,20 +53,20 @@ export default function Chatbot({ page, colors, userRole }) {
     setLoading(true);
 
     try {
-      // Determine the correct endpoint based on user role
-      const endpoint =
-        userRole === ROLES.herbContributor
-          ? "http://127.0.0.1:8000/farmer_advice/"
-          : "http://127.0.0.1:8000/consumer_chat/";
-
-      // Simple logic to extract the likely herb name from the query.
-      // Assumes the herb name is the last word.
-      const words = currentInput.trim().split(" ");
-      const herbName = words[words.length - 1];
+      // Determine the correct API endpoint based on the user's role
+      const baseUrl = "http://127.0.0.1:8000";
+      const endpoint = userRole === ROLES.producer
+          ? `${baseUrl}/farmer_advice/`
+          : `${baseUrl}/consumer_chat/`;
 
       const formData = new FormData();
       formData.append("query", currentInput);
-      formData.append("herb_name", herbName); // Pass the extracted herb name
+      
+      // Removed hardcoded herb name extraction logic to let the backend AI 
+      // handle context from the full query
+      if (userRole === ROLES.producer) {
+        formData.append("location_name", "India"); 
+      }
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -70,7 +74,7 @@ export default function Chatbot({ page, colors, userRole }) {
       });
 
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        throw new Error("Failed to connect to the AyurTrace AI service.");
       }
 
       const data = await response.json();
@@ -88,7 +92,7 @@ export default function Chatbot({ page, colors, userRole }) {
         ...prev,
         {
           sender: "bot",
-          text: `Sorry, something went wrong: ${error.message}`,
+          text: `I'm having trouble connecting right now: ${error.message}`,
         },
       ]);
     } finally {
@@ -98,7 +102,6 @@ export default function Chatbot({ page, colors, userRole }) {
 
   return (
     <>
-      {/* Chatbot Toggle Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-8 right-8 z-50 w-16 h-16 rounded-full text-white shadow-lg flex items-center justify-center"
@@ -110,7 +113,6 @@ export default function Chatbot({ page, colors, userRole }) {
         {isOpen ? <X size={28} /> : <Sparkles size={28} />}
       </motion.button>
 
-      {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -124,7 +126,6 @@ export default function Chatbot({ page, colors, userRole }) {
               borderColor: `${primaryGreen}20`,
             }}
           >
-            {/* Header */}
             <header
               className="p-4 flex items-center space-x-3 text-white"
               style={{ backgroundColor: primaryGreen }}
@@ -132,11 +133,10 @@ export default function Chatbot({ page, colors, userRole }) {
               <Bot size={24} />
               <div>
                 <h3 className="font-bold text-lg">AyurBot</h3>
-                <p className="text-sm opacity-90">Your Ayurvedic Assistant</p>
+                <p className="text-sm opacity-90">Ayurvedic Support ({userRole})</p>
               </div>
             </header>
 
-            {/* Messages */}
             <div className="flex-1 p-4 overflow-y-auto">
               {messages.map((msg, index) => (
                 <motion.div
@@ -174,26 +174,22 @@ export default function Chatbot({ page, colors, userRole }) {
                 </motion.div>
               ))}
               {loading && (
-                <motion.div className="flex justify-start items-center gap-3 my-3">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white"
-                    style={{ backgroundColor: accent }}
-                  >
+                <div className="flex justify-start items-center gap-3 my-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: accent }}>
                     <Bot size={18} />
                   </div>
                   <div className="px-4 py-2 bg-gray-200 dark:bg-slate-700 rounded-2xl rounded-bl-none">
                     <div className="flex items-center space-x-1">
-                      <span className="w-2 h-2 bg-gray-500 rounded-full animate-pulse delay-0"></span>
-                      <span className="w-2 h-2 bg-gray-500 rounded-full animate-pulse delay-150"></span>
-                      <span className="w-2 h-2 bg-gray-500 rounded-full animate-pulse delay-300"></span>
+                      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></span>
+                      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                      <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Form */}
             <form
               onSubmit={handleSendMessage}
               className="p-4 border-t flex items-center"
@@ -203,7 +199,7 @@ export default function Chatbot({ page, colors, userRole }) {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask a question..."
+                placeholder="Ask about herbs, cultivation, or benefits..."
                 className="flex-1 px-4 py-2 rounded-full border bg-transparent focus:outline-none focus:ring-2"
                 style={{
                   borderColor: `${primaryGreen}50`,

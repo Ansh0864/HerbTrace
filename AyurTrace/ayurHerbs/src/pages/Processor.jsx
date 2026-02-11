@@ -74,86 +74,72 @@ export default function Processor({ colors = {} }) {
     setSearchTerm(e.target.value);
   };
 
-  const handleSearch = async (herbId = searchTerm) => {
-    if (!herbId) {
-      setError("Please enter a Herb ID to search.");
+  // pages/Processor.jsx - Updated handleSearch
+const handleSearch = async (herbId = searchTerm) => {
+  if (!herbId) {
+    setError("Please enter a Herb ID to search.");
+    setVerifiedHerbData(null);
+    return;
+  }
+  setLoading(true);
+  setError(null);
+
+  try {
+    // Connects to Endpoint 5: Consumer Traceability in main.py
+    const response = await fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/trace_herb/${herbId}`);
+    const data = await response.json();
+
+    if (data.status === "success") {
+      setVerifiedHerbData(data.data); // Loads origin and processingHistory
+      setProcessingHerbId(herbId);
+    } else {
+      setError(data.message || "Herb ID not found.");
       setVerifiedHerbData(null);
-      return;
     }
-    setLoading(true);
-    setError(null);
+  } catch (err) {
+    setError(`Connection error: ${err.message}`);
+    setVerifiedHerbData(null);
+  } finally {
+    setLoading(false);
+  }
+};
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+// ... existing code (handleSearch function) ...
 
-      const mockData = {
-        status: "success",
-        data: {
-          origin: {
-            name: "Ashwagandha",
-            latitude: 28.6139,
-            longitude: 77.2090,
-            timestamp: 1672531200,
-            confidenceScore: 95,
-            farmer: "Raj Kumar",
-            quality: "Premium Grade A",
-            certifications: ["Organic", "Fair Trade"]
-          },
-          processingHistory: [
-            {
-              action: "Harvested",
-              batchNumber: "ABC-123",
-              timestamp: 1672531800,
-              location: "Delhi, India",
-              details: "Hand-picked during optimal maturity",
-              verified: true
-            },
-            {
-              action: "Cleaned and Dried",
-              batchNumber: "ABC-123",
-              timestamp: 1672618200,
-              location: "Mumbai, India",
-              details: "Cleaned, dried, and quality tested",
-              verified: true
-            }
-          ]
-        }
-      };
+// REPLACE THE OLD handleProcessSubmit WITH THIS ONE:
+const handleProcessSubmit = async (e) => {
+  e.preventDefault();
+  setMessage("");
 
-      if (herbId === "0") {
-        setVerifiedHerbData(mockData.data);
-        setProcessingHerbId(herbId);
-      } else {
-        setError("Herb ID not found. Try '0'.");
-        setVerifiedHerbData(null);
-      }
-    } catch (err) {
-      setError(`An error occurred while fetching data: ${err.message}`);
-      setVerifiedHerbData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!processingHerbId || !processingAction) {
+    setMessage("Herb ID and Action are required.");
+    return;
+  }
 
-  const handleProcessSubmit = async (e) => {
-    e.preventDefault();
-    setMessage("");
+  const formData = new FormData();
+  formData.append("action", processingAction); 
 
-    if (!processingHerbId || !processingAction) {
-      setMessage("Herb ID and Action are required.");
-      return;
-    }
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/process_herb/${processingHerbId}`, {
+      method: "POST",
+      body: formData,
+    });
+    const data = await response.json();
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setMessage(`Processing step '${processingAction}' added successfully!`);
+    if (data.status === "success") {
+      // This fix ensures 'processingAction' is used instead of the undefined 'action'
+      setMessage(`Processing step '${processingAction}' added successfully!`); 
       setProcessingAction("");
-      
-      handleSearch(processingHerbId);
-    } catch (err) {
-      setMessage(`An error occurred: ${err.message}`);
+      handleSearch(processingHerbId); // Refreshes the timeline below automatically
+    } else {
+      setMessage(data.message);
     }
-  };
+  } catch (err) {
+    setMessage(`An error occurred: ${err.message}`);
+  }
+};
+
+
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -163,29 +149,33 @@ export default function Processor({ colors = {} }) {
     }
   };
 
-  const handlePredictQuality = async () => {
-    if (!imageFile) {
-      setQualityScore("Please upload an image first.");
-      return;
-    }
-    
-    setLoadingQuality(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setQualityScore("Excellent Quality - 94% Purity");
-    setLoadingQuality(false);
-  };
 
-  const itemVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: (i) => ({
-      opacity: 1,
-      x: 0,
-      transition: {
-        delay: i * 0.1,
-        duration: 0.5,
-      },
-    }),
-  };
+
+const handlePredictQuality = async () => {
+  if (!imageFile) return;
+  setLoadingQuality(true);
+  
+  const formData = new FormData();
+  formData.append("image_file", imageFile);
+  formData.append("latitude", 0); // Dummy for analysis only
+  formData.append("longitude", 0);
+
+  try {
+    // This connects to Endpoint 1 in your main.py: @app.post("/submit_herb/")
+    const response = await fetch(`http://127.0.0.1:8000/submit_herb/`, {
+      method: "POST",
+      body: formData,
+    });
+    const data = await response.json();
+    
+    // Updates the UI with real AI species identification and confidence from the backend
+    setQualityScore(`${data.ai_result.verified_species} - Confidence: ${data.ai_result.confidence}`);
+  } catch (err) {
+    setQualityScore("Analysis failed.");
+  } finally {
+    setLoadingQuality(false);
+  }
+};
 
   return (
     <motion.div 
@@ -518,14 +508,28 @@ export default function Processor({ colors = {} }) {
                               Certifications:
                             </h4>
                             <div className="flex flex-wrap gap-2">
-                              {verifiedHerbData.origin.certifications.map((cert, i) => (
-                                <span 
-                                  key={i}
-                                  className="px-3 py-1 rounded-full text-xs font-semibold text-white"
-                                  style={{ backgroundColor: success }}
+                              {verifiedHerbData.processingHistory?.map((step, index) => (
+                                <div 
+                                  key={index}
+                                  className="p-3 rounded-lg border-l-4 text-sm"
+                                  style={{ 
+                                    backgroundColor: `${primaryGreen}08`,
+                                    borderColor: step.verified ? success : goldTan
+                                  }}
                                 >
-                                  {cert}
-                                </span>
+                                  <div className="flex items-start justify-between mb-2">
+                                    <span className="font-bold" style={{ color: primaryGreen }}>
+                                      {step.action}
+                                    </span>
+                                    {step.verified && (
+                                      <CheckCircle2 size={16} style={{ color: success }} />
+                                    )}
+                                  </div>
+                                  <p className="opacity-70 mb-1">{step.location}</p>
+                                  <p className="text-xs opacity-60">
+                                    {new Date(step.timestamp * 1000).toLocaleString()}
+                                  </p>
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -536,31 +540,33 @@ export default function Processor({ colors = {} }) {
                               Processing History:
                             </h4>
                             <div className="space-y-3">
-                              {verifiedHerbData.processingHistory.length > 0 ? (
+                              {verifiedHerbData.processingHistory?.length > 0 ? (
                                 verifiedHerbData.processingHistory.map((step, index) => (
+                                  
+                                  // PASTE THE UPDATED LOGIC HERE 
                                   <div 
                                     key={index}
                                     className="p-3 rounded-lg border-l-4 text-sm"
                                     style={{ 
                                       backgroundColor: `${primaryGreen}08`,
-                                      borderColor: step.verified ? success : goldTan
+                                      borderColor: step.processor ? success : goldTan
                                     }}
                                   >
                                     <div className="flex items-start justify-between mb-2">
                                       <span className="font-bold" style={{ color: primaryGreen }}>
                                         {step.action}
                                       </span>
-                                      {step.verified && (
+                                      {step.processor && (
                                         <CheckCircle2 size={16} style={{ color: success }} />
                                       )}
                                     </div>
-                                    <p className="opacity-70 mb-1">
-                                      {step.location}
-                                    </p>
+                                    <p className="opacity-70 mb-1">Batch: {step.batchNumber}</p>
                                     <p className="text-xs opacity-60">
                                       {new Date(step.timestamp * 1000).toLocaleString()}
                                     </p>
                                   </div>
+                                  // END OF UPDATED LOGIC
+
                                 ))
                               ) : (
                                 <p className="text-center opacity-60 py-4">

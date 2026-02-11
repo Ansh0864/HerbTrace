@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCamera, FaUpload, FaMapMarkerAlt, FaCheckCircle, FaSpinner, FaTimes, FaEdit, FaQrcode } from "react-icons/fa";
 
-function HerbForm({ colors = {} }) {
+function HerbForm({ colors = {}, userRole }) {
   const primaryGreen = colors.primaryGreen || "#4a7c59";
   const goldTan = colors.goldTan || "#a87f4f";
   const lightGrey = colors.lightGrey || "#f0f4f7";
@@ -75,14 +75,13 @@ function HerbForm({ colors = {} }) {
   };
 
   const identifyAndSubmit = async () => {
-    setLoading(true);
-    setError("");
-    setIdentificationResult(null);
-    setLocation(null);
-    setEditedHerbName("");
-    setSubmissionStatus(null);
-    setQrCodeUrl(null);
-    setHerbId(null);
+
+    // Check if user is Producer
+    if (userRole !== "Producer") {
+      setError("Only authorized Producers can submit herb data.");
+      setLoading(false);
+      return;
+    }
 
     if (!image) {
       setError("Please take a photo or upload an image first.");
@@ -91,44 +90,27 @@ function HerbForm({ colors = {} }) {
     }
 
     try {
-      const locationPromise = new Promise((resolve, reject) => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => resolve({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            }),
-            (err) => reject("Could not retrieve location. Please check your browser settings."),
-            {
-              enableHighAccuracy: true,
-              timeout: 10000,
-              maximumAge: 0
-            }
-          );
-        } else {
-          reject("Geolocation is not supported by this browser.");
-        }
+      // Dynamic location retrieval
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
       });
+
+      const locationData = { lat: position.coords.latitude, lng: position.coords.longitude };
+      setLocation(locationData);
 
       const imageBlob = await fetch(image).then(res => res.blob());
       const file = new File([imageBlob], "herb_image.png", { type: "image/png" });
-
-      const locationData = await locationPromise;
-      setLocation(locationData);
 
       const formData = new FormData();
       formData.append("image_file", file);
       formData.append("latitude", locationData.lat);
       formData.append("longitude", locationData.lng);
 
-      const response = await fetch("http://127.0.0.1:8000/submit_herb/", {
+      // Backend API call
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/submit_herb/`, {
         method: "POST",
         body: formData,
       });
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
 
       const data = await response.json();
 
@@ -140,8 +122,8 @@ function HerbForm({ colors = {} }) {
         setEditedHerbName(data.ai_result.verified_species);
         setHerbId(data.herb_id); // Store the herb ID
 
-        // Fetch the QR code from the new backend endpoint
-        const qrResponse = await fetch(`http://127.0.0.1:8000/generate_qr/${data.herb_id}`);
+        // Generate dynamic QR Code
+        const qrResponse = await fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/generate_qr/${data.herb_id}`);
         const qrBlob = await qrResponse.blob();
         setQrCodeUrl(URL.createObjectURL(qrBlob));
 

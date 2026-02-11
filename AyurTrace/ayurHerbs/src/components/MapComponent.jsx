@@ -11,35 +11,17 @@ export default function MapComponent({ openChat, colors = {} }) {
   const [herbData, setHerbData] = useState([]);
 
   useEffect(() => {
-    // Simulating API call, you can replace this with your actual API call
-    const dummyData = [
-      {
-        id: "1",
-        name: "Ashwagandha",
-        latitude: 28.6139,
-        longitude: 77.209,
-        verified_species: "Withania somnifera",
-        confidence_score: "92%",
-      },
-      {
-        id: "2",
-        name: "Brahmi",
-        latitude: 19.076,
-        longitude: 72.8777,
-        verified_species: "Bacopa monnieri",
-        confidence_score: "89%",
-      },
-    ];
-    setHerbData(dummyData);
-
-    // Uncomment this when using actual API
-    /*
-    fetch("/dashboard/")
-      .then((res) => res.json())
-      .then((data) => setHerbData(data))
-      .catch((err) => console.error("Error fetching herb data:", err));
-    */
-  }, []);
+  // Replace dummyData with the actual backend call
+  fetch("http://127.0.0.1:8000/dashboard/")
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.status === "success") {
+        // Map backend fields (name, latitude, etc.) to the state
+        setHerbData(result.data); 
+      }
+    })
+    .catch((err) => console.error("Error fetching blockchain records:", err));
+}, []);
 
   return (
     <MapContainer center={[20, 77]} zoom={5} style={{ height: "100%", width: "100%" }}>

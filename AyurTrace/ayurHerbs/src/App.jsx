@@ -42,7 +42,7 @@ const PAGES = {
 // Role constants
 const ROLES = {
   customer: "Customer",
-  herbContributor: "Herb Form",
+  producer: "Producer",
   processor: "Processor",
 };
 
@@ -74,6 +74,8 @@ function App() {
       setPageHistory([PAGES.home]);
     }
   }, []);
+
+  
 
   useEffect(() => {
     if (darkMode) {
@@ -161,7 +163,7 @@ function App() {
       case PAGES.home:
         return <HomePage colors={colors} navigateTo={navigateTo} PAGES={PAGES} userRole={userRole} ROLES={ROLES} currentUser={currentUser} isDarkMode={darkMode} />;
       case PAGES.herbForm:
-        return <HerbForm colors={colors} navigateTo={navigateTo} PAGES={PAGES} />;
+        return <HerbForm colors={colors} navigateTo={navigateTo} PAGES={PAGES} userRole={userRole} />;
       case PAGES.healthyLifestyle:
         return <HealthyLifestyle colors={colors} />;
       case PAGES.customer:
@@ -204,6 +206,11 @@ function App() {
         });
       }
 
+      // Add Producer link for Herb Form
+      if (userRole === ROLES.producer) {
+        links.push({ label: "Contribute", icon: Leaf, page: PAGES.herbForm });
+      }
+
       return (
         <div className={`flex ${mobile ? 'flex-col space-y-3' : 'items-center space-x-4'}`}>
           {links.map((link) => (
@@ -222,127 +229,51 @@ function App() {
     return null;
   };
 
-  // Enhanced rotating leaf background component
-  const BigRotatingLeaf = () => (
+ // Corrected BigRotatingLeaf component for App.jsx
+const BigRotatingLeaf = () => {
+  // Ensure colors and darkMode are defined before rendering
+  if (!colors) return null;
+
+  const pathVariants = {
+    start: "M500 150C600 200 750 250 800 400C850 550 750 650 650 700C550 750 450 700 400 600C350 500 300 400 350 300C400 200 450 150 500 150Z",
+    mid: "M500 170C620 220 770 270 820 420C870 570 770 670 670 720C570 770 470 720 420 620C370 520 320 420 370 320C420 220 470 170 500 170Z"
+  };
+
+  return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
       <motion.div
         className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-        animate={{ 
-          rotate: [0, 360],
-          scale: [0.8, 1.3, 0.8],
-        }}
+        animate={{ rotate: [0, 360], scale: [0.8, 1.3, 0.8] }}
         transition={{
-          rotate: { 
-            duration: 60,
-            repeat: Infinity,
-            ease: "linear"
-          },
-          scale: {
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }
+          rotate: { duration: 60, repeat: Infinity, ease: "linear" },
+          scale: { duration: 25, repeat: Infinity, ease: "easeInOut" }
         }}
       >
         <motion.div
           className="relative opacity-[0.015]"
-          animate={{
-            opacity: darkMode ? [0.01, 0.03, 0.01] : [0.015, 0.04, 0.015]
-          }}
-          transition={{
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+          animate={{ opacity: darkMode ? [0.01, 0.03, 0.01] : [0.015, 0.04, 0.015] }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
         >
-          <svg 
-            width="1200" 
-            height="1200" 
-            viewBox="0 0 1000 1000" 
-            fill="none"
-            className="drop-shadow-2xl"
-          >
+          <svg width="1200" height="1200" viewBox="0 0 1000 1000" fill="none" className="drop-shadow-2xl">
             <motion.path
-              d="M500 150C600 200 750 250 800 400C850 550 750 650 650 700C550 750 450 700 400 600C350 500 300 400 350 300C400 200 450 150 500 150Z"
+              d={pathVariants.start}
               fill={darkMode ? colors.primaryGreen : colors.secondaryGreen}
-              animate={{
-                d: [
-                  "M500 150C600 200 750 250 800 400C850 550 750 650 650 700C550 750 450 700 400 600C350 500 300 400 350 300C400 200 450 150 500 150Z",
-                  "M500 170C620 220 770 270 820 420C870 570 770 670 670 720C570 770 470 720 420 620C370 520 320 420 370 320C420 220 470 170 500 170Z",
-                  "M500 150C600 200 750 250 800 400C850 550 750 650 650 700C550 750 450 700 400 600C350 500 300 400 350 300C400 200 450 150 500 150Z"
-                ]
-              }}
-              transition={{
-                duration: 30,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
+              animate={{ d: [pathVariants.start, pathVariants.mid, pathVariants.start] }}
+              transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
             />
             <motion.path
               d="M500 200C550 230 650 270 680 370C710 470 670 530 620 560C570 590 520 570 490 520C460 470 440 420 460 370C480 320 490 270 520 230C530 210 500 200 500 200Z"
               fill={darkMode ? colors.goldTan : colors.accent}
               opacity="0.7"
-              animate={{
-                opacity: [0.7, 1, 0.7],
-                scale: [1, 1.1, 1]
-              }}
-              transition={{
-                duration: 15,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
+              animate={{ opacity: [0.7, 1, 0.7], scale: [1, 1.1, 1] }}
+              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
             />
           </svg>
         </motion.div>
       </motion.div>
-      
-      {/* Additional decorative elements */}
-      <motion.div
-        className="absolute top-1/4 right-1/4 opacity-[0.015]"
-        animate={{
-          rotate: [0, -360],
-          scale: [1, 1.6, 1],
-        }}
-        transition={{
-          rotate: { 
-            duration: 45,
-            repeat: Infinity,
-            ease: "linear"
-          },
-          scale: {
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }
-        }}
-      >
-        <Leaf size={300} style={{ color: colors.primaryGreen }} />
-      </motion.div>
-      
-      <motion.div
-        className="absolute bottom-1/4 left-1/4 opacity-[0.015]"
-        animate={{
-          rotate: [0, 360],
-          scale: [1.3, 0.8, 1.3],
-        }}
-        transition={{
-          rotate: { 
-            duration: 55,
-            repeat: Infinity,
-            ease: "linear"
-          },
-          scale: {
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }
-        }}
-      >
-        <Leaf size={220} style={{ color: colors.goldTan }} />
-      </motion.div>
     </div>
   );
-
+};
   // Enhanced floating leaf components for background
   const FloatingLeaves = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">

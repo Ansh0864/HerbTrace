@@ -7,7 +7,7 @@ contract AyurTrace is AccessControl {
     bytes32 public constant PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
 
     struct Herb {
-        string name; // This will now be the AI-verified name
+        string name;
         uint256 confidenceScore;
         int latitude;
         int longitude;
@@ -15,37 +15,32 @@ contract AyurTrace is AccessControl {
         address farmer;
     }
 
-    // Struct for subsequent processing steps
     struct ProcessingStep {
-        string action; // e.g., "Dried", "Packaged", "Quality Tested"
+        string action;
         string batchNumber;
         uint256 timestamp;
-        address processor; // Address of the processor
+        address processor;
     }
 
-    // Mapping from herb ID to the herb's initial data
     mapping(uint256 => Herb) public herbEntries;
-
-    // Mapping from herb ID to its processing history
     mapping(uint256 => ProcessingStep[]) public processingHistory;
 
     uint256 public herbCount;
 
+    // Added 'id' to the event for backend indexing
     event HerbAdded(uint256 indexed id, string name, address indexed farmer);
     event ProcessingStepAdded(uint256 indexed herbId, string action, string batchNumber, address indexed processor);
 
     constructor() {
-        // Use _grantRole instead of the deprecated _setupRole
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    
     function addHerb(
-        string memory _name, // The AI-verified species from the backend
+        string memory _name,
         uint256 _confidenceScore,
         int _latitude,
         int _longitude
-        ) public {
+    ) public {
         herbEntries[herbCount] = Herb({
             name: _name,
             confidenceScore: _confidenceScore,
@@ -54,10 +49,12 @@ contract AyurTrace is AccessControl {
             timestamp: block.timestamp,
             farmer: msg.sender
         });
+        
+        // Emit event with current herbCount as ID
         emit HerbAdded(herbCount, _name, msg.sender);
         herbCount++;
     }
-    
+
     function addProcessingStep(
         uint256 _herbId,
         string memory _action,
