@@ -12,7 +12,7 @@ export default function MapComponent({ openChat, colors = {} }) {
 
   useEffect(() => {
   // Replace dummyData with the actual backend call
-  fetch("http://127.0.0.1:8000/dashboard/")
+  fetch("https://ayurtrace-backend.onrender.com/dashboard/")
     .then((res) => res.json())
     .then((result) => {
       if (result.status === "success") {

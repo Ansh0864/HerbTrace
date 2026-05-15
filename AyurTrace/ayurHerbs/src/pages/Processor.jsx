@@ -86,7 +86,7 @@ const handleSearch = async (herbId = searchTerm) => {
 
   try {
     // Connects to Endpoint 5: Consumer Traceability in main.py
-    const response = await fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/trace_herb/${herbId}`);
+    const response = await fetch(`${import.meta.env.VITE_API_URL || "https://ayurtrace-backend.onrender.com"}/trace_herb/${herbId}`);
     const data = await response.json();
 
     if (data.status === "success") {
@@ -120,7 +120,7 @@ const handleProcessSubmit = async (e) => {
   formData.append("action", processingAction); 
 
   try {
-    const response = await fetch(`http://127.0.0.1:8000/process_herb/${processingHerbId}`, {
+    const response = await fetch(`https://ayurtrace-backend.onrender.com/process_herb/${processingHerbId}`, {
       method: "POST",
       body: formData,
     });
@@ -162,7 +162,7 @@ const handlePredictQuality = async () => {
 
   try {
     // This connects to Endpoint 1 in your main.py: @app.post("/submit_herb/")
-    const response = await fetch(`http://127.0.0.1:8000/submit_herb/`, {
+    const response = await fetch(`https://ayurtrace-backend.onrender.com/submit_herb/`, {
       method: "POST",
       body: formData,
     });

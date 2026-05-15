@@ -23,7 +23,7 @@ const handleTraceSearch = async () => {
   setError(null);
 
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/trace_herb/${searchTerm}`);
+    const response = await fetch(`${import.meta.env.VITE_API_URL || "https://ayurtrace-backend.onrender.com"}/trace_herb/${searchTerm}`);
     const result = await response.json();
 
     if (result.status === "success") {

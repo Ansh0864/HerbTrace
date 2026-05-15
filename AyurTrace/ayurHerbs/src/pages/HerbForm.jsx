@@ -124,7 +124,7 @@ function HerbForm({ colors = {}, userRole }) {
         setHerbId(data.herb_id); // Store the herb ID
 
         // Generate dynamic QR Code
-        const qrResponse = await fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/generate_qr/${data.herb_id}`);
+        const qrResponse = await fetch(`${import.meta.env.VITE_API_URL || "https://ayurtrace-backend.onrender.com"}/generate_qr/${data.herb_id}`);
         const qrBlob = await qrResponse.blob();
         setQrCodeUrl(URL.createObjectURL(qrBlob));
 
