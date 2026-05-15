@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/AyurTrace/backend/main.py"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/AyurTrace/ayurHerbs/index.html"
+    }
+  ]
+}

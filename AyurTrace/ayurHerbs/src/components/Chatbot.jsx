@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Bot, Send, X, User } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
+import API_BASE_URL from "../config";
 
-// Role constants aligned with App.jsx and AuthPage.jsx
+
 const ROLES = {
   customer: "Customer",
   producer: "Producer",
@@ -23,7 +24,7 @@ export default function Chatbot({ colors, userRole, currentUser, darkMode }) {
   const darkText = colors.darkText || "#111827";
 
   useEffect(() => {
-    // Dynamic greeting based on the logged-in user's role
+    
     if (isOpen) {
       const userName = currentUser?.email ? currentUser.email.split('@')[0] : "there";
       let greeting = `Welcome ${userName}! How can I help you learn about Ayurvedic herbs today?`;
@@ -62,15 +63,15 @@ export default function Chatbot({ colors, userRole, currentUser, darkMode }) {
       const formData = new FormData();
       formData.append("query", currentInput);
       
-      // Removed hardcoded herb name extraction logic to let the backend AI 
-      // handle context from the full query
+      
       if (userRole === ROLES.producer) {
         formData.append("location_name", "India"); 
       }
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
+      // Clean dynamic string template pointing to your live Render backend
+      const response = await fetch(`${API_BASE_URL}/consumer_chat/`, {
+      method: 'POST',
+      body: formData,
       });
 
       if (!response.ok) {

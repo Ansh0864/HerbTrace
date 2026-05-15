@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import API_BASE_URL from "../config";
 import { FaCamera, FaUpload, FaMapMarkerAlt, FaCheckCircle, FaSpinner, FaTimes, FaEdit, FaQrcode } from "react-icons/fa";
 
 function HerbForm({ colors = {}, userRole }) {
@@ -76,7 +77,6 @@ function HerbForm({ colors = {}, userRole }) {
 
   const identifyAndSubmit = async () => {
 
-    // Check if user is Producer
     if (userRole !== "Producer") {
       setError("Only authorized Producers can submit herb data.");
       setLoading(false);
@@ -107,9 +107,10 @@ function HerbForm({ colors = {}, userRole }) {
       formData.append("longitude", locationData.lng);
 
       // Backend API call
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/submit_herb/`, {
-        method: "POST",
-        body: formData,
+      // Clean dynamic template string using your new config file
+      const res = await fetch(`${API_BASE_URL}/predict/`, {
+      method: 'POST',
+      body: formData, // or whatever your data body is named in the function
       });
 
       const data = await response.json();
