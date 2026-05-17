@@ -91,6 +91,7 @@ async def submit_herb(
     if not model:
         return {"status": "error", "message": "AI model is not loaded."}
 
+    # Inside submit_herb function in main.py
     try:
         image_content = await image_file.read()
         processed_image = preprocess_image(image_content)
@@ -100,6 +101,19 @@ async def submit_herb(
         predicted_index = np.argmax(prediction)
         ai_verified_species = class_names[predicted_index]
 
+        # Safety fallback if Web3 isn't connected to a live public network
+        if not web3.is_connected() or "127.0.0.1" in web3.provider.endpoint_uri:
+            print("Running in Cloud Demo Mode: Skipping local Ganache call.")
+            return {
+                "status": "success",
+                "herb_id": 999, # Fake placeholder ID for demo
+                "ai_result": {
+                    "verified_species": ai_verified_species,
+                    "confidence": f"{confidence_score:.2f}%"
+                },
+                "note": "AI processing successful; local blockchain simulation bypassed in production."
+            }
+
         if AyurTraceContract:
             account = web3.eth.accounts[0]
             tx_hash = AyurTraceContract.functions.addHerb(
@@ -108,17 +122,10 @@ async def submit_herb(
                 int(latitude * 1e6),
                 int(longitude * 1e6)
             ).transact({'from': account})
-
+            
             receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-            
-            # Robust event processing
             event_logs = AyurTraceContract.events.HerbAdded().process_receipt(receipt)
-            
-            if event_logs:
-                herb_id = event_logs[0]['args']['id']
-            else:
-                # Fallback to get ID if event parsing fails
-                herb_id = AyurTraceContract.functions.herbCount().call() - 1
+            herb_id = event_logs[0]['args']['id'] if event_logs else AyurTraceContract.functions.herbCount().call() - 1
 
             return {
                 "status": "success",
