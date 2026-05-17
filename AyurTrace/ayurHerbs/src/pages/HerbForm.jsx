@@ -106,11 +106,10 @@ function HerbForm({ colors = {}, userRole }) {
       formData.append("latitude", locationData.lat);
       formData.append("longitude", locationData.lng);
 
-      // Backend API call
-      // Clean dynamic template string using your new config file
-      const res = await fetch(`${API_BASE_URL}/predict/`, {
-      method: 'POST',
-      body: formData, // or whatever your data body is named in the function
+      // Backend API call 
+      const response = await fetch(`${API_BASE_URL}/submit_herb/`, {
+      method: "POST",
+      body: formData,
       });
 
       const data = await response.json();
@@ -123,10 +122,9 @@ function HerbForm({ colors = {}, userRole }) {
         setEditedHerbName(data.ai_result.verified_species);
         setHerbId(data.herb_id); // Store the herb ID
 
-        // Generate dynamic QR Code
-        const qrResponse = await fetch(`${import.meta.env.VITE_API_URL || "https://ayurtrace-backend.onrender.com"}/generate_qr/${data.herb_id}`);
-        const qrBlob = await qrResponse.blob();
-        setQrCodeUrl(URL.createObjectURL(qrBlob));
+      const qrResponse = await fetch(`${API_BASE_URL}/generate_qr/${data.herb_id}`);
+      const qrBlob = await qrResponse.blob();
+      setQrCodeUrl(URL.createObjectURL(qrBlob));
 
         setSubmissionStatus("success");
       } else {
