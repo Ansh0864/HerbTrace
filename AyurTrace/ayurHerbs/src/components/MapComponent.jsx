@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import API_BASE_URL from "../config";
 
 // Fix marker icon issue in React + Vite
 import L from "leaflet";
@@ -12,7 +13,7 @@ export default function MapComponent({ openChat, colors = {} }) {
 
   useEffect(() => {
   // Replace dummyData with the actual backend call
-  fetch("https://ayurtrace-backend.onrender.com/dashboard/")
+  fetch(`${API_BASE_URL}/dashboard/`)
     .then((res) => res.json())
     .then((result) => {
       if (result.status === "success") {

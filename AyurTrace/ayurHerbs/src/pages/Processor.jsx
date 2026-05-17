@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaMapMarkerAlt, FaQrcode, FaSearch, FaPlusCircle, FaHistory, FaCamera, FaSpinner, FaCheckCircle } from "react-icons/fa";
 import { Html5QrcodeScanner } from "html5-qrcode";
+import API_BASE_URL from "../config";
 import { BarChart2, Zap, Shield, Award, CheckCircle2, Clock, MapPin, Package, AlertCircle, ChevronRight, Layers, Workflow } from "lucide-react";
 
 export default function Processor({ colors = {} }) {
@@ -86,7 +87,7 @@ const handleSearch = async (herbId = searchTerm) => {
 
   try {
     // Connects to Endpoint 5: Consumer Traceability in main.py
-    const response = await fetch(`${import.meta.env.VITE_API_URL || "https://ayurtrace-backend.onrender.com"}/trace_herb/${herbId}`);
+    const response = await fetch(`${API_BASE_URL}/trace_herb/${herbId}`);
     const data = await response.json();
 
     if (data.status === "success") {
@@ -120,10 +121,10 @@ const handleProcessSubmit = async (e) => {
   formData.append("action", processingAction); 
 
   try {
-    const response = await fetch(`https://ayurtrace-backend.onrender.com/process_herb/${processingHerbId}`, {
-      method: "POST",
-      body: formData,
-    });
+    const response = await fetch(`${API_BASE_URL}/process_herb/${processingHerbId}`, {
+  method: "POST",
+  body: formData,
+});
     const data = await response.json();
 
     if (data.status === "success") {
@@ -162,10 +163,11 @@ const handlePredictQuality = async () => {
 
   try {
     // This connects to Endpoint 1 in your main.py: @app.post("/submit_herb/")
-    const response = await fetch(`https://ayurtrace-backend.onrender.com/submit_herb/`, {
-      method: "POST",
-      body: formData,
-    });
+    // This connects to Endpoint 1 in your main.py: @app.post("/submit_herb/")
+const response = await fetch(`${API_BASE_URL}/submit_herb/`, {
+  method: "POST",
+  body: formData,
+});
     const data = await response.json();
     
     // Updates the UI with real AI species identification and confidence from the backend

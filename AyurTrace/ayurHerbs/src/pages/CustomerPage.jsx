@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, QrCode, History, Camera, BarChart2, Sparkles, MapPin, Zap } from "lucide-react";
 import MapComponent from "../components/MapComponent";
+import API_BASE_URL from "../config";
 
 export default function CustomerPage({ colors = {}, navigateTo, PAGES }) {
   const [selectedHerb, setSelectedHerb] = useState(null);
@@ -23,7 +24,7 @@ const handleTraceSearch = async () => {
   setError(null);
 
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || "https://ayurtrace-backend.onrender.com"}/trace_herb/${searchTerm}`);
+    const response = await fetch(`${API_BASE_URL}/trace_herb/${searchTerm}`);
     const result = await response.json();
 
     if (result.status === "success") {

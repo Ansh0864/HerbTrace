@@ -55,7 +55,7 @@ export default function Chatbot({ colors, userRole, currentUser, darkMode }) {
 
     try {
       // Determine the correct API endpoint based on the user's role
-      const baseUrl = "https://ayurtrace-backend.onrender.com";
+      const baseUrl = API_BASE_URL;
       const endpoint = userRole === ROLES.producer
           ? `${baseUrl}/farmer_advice/`
           : `${baseUrl}/consumer_chat/`;
