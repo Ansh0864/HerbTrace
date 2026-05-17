@@ -91,8 +91,8 @@ async def submit_herb(
     if not model:
         return {"status": "error", "message": "AI model is not loaded."}
 
-    # Inside submit_herb function in main.py
     try:
+        # 1. Process image and run AI Prediction model
         image_content = await image_file.read()
         processed_image = preprocess_image(image_content)
         prediction = model.predict(processed_image)
@@ -101,45 +101,45 @@ async def submit_herb(
         predicted_index = np.argmax(prediction)
         ai_verified_species = class_names[predicted_index]
 
-        # Safety fallback if Web3 isn't connected to a live public network
-        if not web3.is_connected() or "127.0.0.1" in web3.provider.endpoint_uri:
-            print("Running in Cloud Demo Mode: Skipping local Ganache call.")
-            return {
-                "status": "success",
-                "herb_id": 999, # Fake placeholder ID for demo
-                "ai_result": {
-                    "verified_species": ai_verified_species,
-                    "confidence": f"{confidence_score:.2f}%"
-                },
-                "note": "AI processing successful; local blockchain simulation bypassed in production."
+        # Prepare default success response payload data
+        response_data = {
+            "status": "success",
+            "herb_id": 999,  # Default fallback placeholder ID for cloud demo mode
+            "ai_result": {
+                "verified_species": ai_verified_species,
+                "confidence": f"{confidence_score:.2f}%"
             }
+        }
 
-        if AyurTraceContract:
-            account = web3.eth.accounts[0]
-            tx_hash = AyurTraceContract.functions.addHerb(
-                ai_verified_species,
-                int(confidence_score),
-                int(latitude * 1e6),
-                int(longitude * 1e6)
-            ).transact({'from': account})
-            
-            receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-            event_logs = AyurTraceContract.events.HerbAdded().process_receipt(receipt)
-            herb_id = event_logs[0]['args']['id'] if event_logs else AyurTraceContract.functions.herbCount().call() - 1
+        # 2. Attempt Blockchain Transaction securely
+        try:
+            # Check if web3 is connected before hitting local network accounts
+            if web3 and web3.is_connected() and AyurTraceContract:
+                account = web3.eth.accounts[0]
+                tx_hash = AyurTraceContract.functions.addHerb(
+                    ai_verified_species,
+                    int(confidence_score),
+                    int(latitude * 1e6),
+                    int(longitude * 1e6)
+                ).transact({'from': account})
 
-            return {
-                "status": "success",
-                "herb_id": int(herb_id),
-                "ai_result": {
-                    "verified_species": ai_verified_species,
-                    "confidence": f"{confidence_score:.2f}%"
-                }
-            }
-        else:
-            return {"status": "error", "message": "Smart contract not deployed."}
+                receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+                event_logs = AyurTraceContract.events.HerbAdded().process_receipt(receipt)
+                
+                herb_id = event_logs[0]['args']['id'] if event_logs else AyurTraceContract.functions.herbCount().call() - 1
+                response_data["herb_id"] = int(herb_id)
+            else:
+                response_data["note"] = "Blockchain offline. Running in Cloud Demo Mock Mode."
+        
+        except Exception as blockchain_err:
+            # If Ganache connection times out, we catch it here so the AI feature still succeeds!
+            print(f"Blockchain connection bypassed: {str(blockchain_err)}")
+            response_data["note"] = "AI processed successfully. Local blockchain logging bypassed in production cloud demo."
+
+        return response_data
 
     except Exception as e:
-        return {"status": "error", "message": f"An error occurred: {str(e)}"}
+        return {"status": "error", "message": f"Core processing error occurred: {str(e)}"}
 
 # --- Endpoint 2: QR Code Generation ---
 @app.get("/generate_qr/{herb_id}")
